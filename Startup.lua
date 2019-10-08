@@ -1,6 +1,6 @@
 NBUI = {}
 
-NBUI.name = "Notebook2018"
+NBUI.name = "Notebook+"
 -- NBUI.version = "4.13"
 NBUI.settings = {
 	NB1_Anchor 					= {a = CENTER, b = CENTER, x = 0, y = -20},
@@ -17,6 +17,7 @@ NBUI.settings = {
 	NB1_ChatButton_Max_Offset 	= 0,		-- Offsets the button's position.
 	NB1_ChatButton_Min_Offset 	= 0,		-- ..
 	NB1Pages 					= {},
+	NB1_AutoSave                = true,
 	NB1_LastPageSeen			= 1,
 	NB1_AccountWide 			= false,	-- Pages saved for all characters. Overrides character pages!
 	NB1_EditModeHover 			= false,	-- Enter Edit Mode on mouse hover on page.
@@ -80,7 +81,7 @@ function NBUI.Initialize()
 	NB1_IndexPool = ZO_ObjectPool:New(Create_NB1_IndexButton, Remove_NB1_IndexButton)
 
 	CreateNB1()
-
+	
 	Populate_NB1_ScrollList()
 end
 

@@ -1,10 +1,10 @@
-## Title: Notebook 2018
+## Title: Notebook+
 ## Description: An advanced notebook.
 ## APIVersion: 100028
-## Version: 4.78
-## Author: phuein & Bloodspill
+## Version: 5.0.0
+## Author: phuein & Bloodspill & Dalethium
 ## SavedVariables: NBUISVDB NBUISVDBACCT
-## OptionalDependsOn: LibStub LibAddonMenu-2.0
+## OptionalDependsOn: LibStub LibAddonMenu-2.0 Clock
 
 Lang/en.lua
 Lang/$(language).lua
@@ -28,6 +28,6 @@ libs\LibAddonMenu-2.0\controls\iconpicker.lua
 libs\LibAddonMenu-2.0\controls\divider.lua
 
 Startup.lua
-Notebook1.lua
+Notebook+.lua
 Settings.lua
 Bindings.xml

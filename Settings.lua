@@ -2,7 +2,7 @@ function CreateNBUISettings()
 	local LAM = LibStub("LibAddonMenu-2.0")
 	local panelData = {
         type = "panel",
-        name = "Notebook 2018",
+        name = "Notebook+",
 		displayName = ZO_HIGHLIGHT_TEXT:Colorize(GetString(SI_NBUI_ADDONOPTIONS_NAME)),
 		author = GetString(SI_NBUI_AUTHOR),
 		registerForRefresh  = true,

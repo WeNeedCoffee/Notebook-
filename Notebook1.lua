@@ -156,19 +156,32 @@ NB1ConfirmMarkupDialog = {
 	}
 }
 ZO_Dialogs_RegisterCustomDialog("NBUI_NB1CONFIRM_MARKUP", NB1ConfirmMarkupDialog)
-
+function NBUI.save(self, auto) 
+	if (auto) then 
+		if (NBUI.db.NB1_AutoSave) then 
+			NBUI.NB1SavePage(self)
+		end
+	elseif (NBUI.db.NB1_ShowDialog) then
+		ZO_Dialogs_ShowDialog("NBUI_NB1CONFIRM_SAVE")
+	else
+		NBUI.NB1SavePage(self)
+	end
+end
 function Create_NB1_IndexButton(NB1_IndexPool)
 	local button = WINDOW_MANAGER:CreateControlFromVirtual("NB1_Index" .. NB1_IndexPool:GetNextControlId(), NBUI.NB1LeftPage_ScrollContainer.scrollChild, "ZO_DefaultTextButton")
 	local anchorBtn = buttonCount == 1 and NBUI.NB1LeftPage_ScrollContainer.scrollChild or NB1_IndexPool:AcquireObject(buttonCount-1)
 
 	button:SetAnchor(TOPLEFT, anchorBtn, buttonCount == 1 and TOPLEFT or BOTTOMLEFT)
 	button:SetClickSound(SOUNDS.BOOK_PAGE_TURN)
-	button:SetFont("ZoFontBookPaper")
+	button:SetFont("$(ANTIQUE_FONT)|18")
 	button:EnableMouseButton(MOUSE_BUTTON_INDEX_RIGHT, true)
 
 	button:SetHandler("OnClicked", function(self, button , ctrl , alt , shift , command)
 		-- Page selection, or loaded at startup.
 		if button == MOUSE_BUTTON_INDEX_LEFT or not button then
+			if button then
+				NBUI.save(self, true)
+			end
 			-- File global variable!
 			currentlyViewing = self.id
 			-- Track page viewed, to reopen on game reload.
@@ -288,6 +301,18 @@ end
 function Remove_NB1_IndexButton(button)
 	button:SetHidden(true)
 end
+
+function NBUI.keyEvent(self, key, ctrl, alt, shift, command)
+	if key == KEY_ESCAPE then
+		if not NBUI.NB1MainWindow:IsHidden() then
+			NBUI.close(self)
+		end
+	elseif key == KEY_N then 
+		if not NBUI.NB1MainWindow:IsHidden() then
+			NBUI.close(self)
+		end
+	end
+end
 ---------------------------------------------------------------------------------------------------
 --  Interface  --
 ---------------------------------------------------------------------------------------------------
@@ -301,7 +326,8 @@ function CreateNB1()
 		NBUI.NB1MainWindow:SetAnchor(NBUI.db.NB1_Anchor.a, GuiRoot, NBUI.db.NB1_Anchor.b, NBUI.db.NB1_Anchor.x, NBUI.db.NB1_Anchor.y)
 		NBUI.NB1MainWindow:SetClampedToScreen(true)
 		NBUI.NB1MainWindow:SetDimensions(1004, 752)
-
+		NBUI.NB1MainWindow:SetKeyboardEnabled(true)
+		NBUI.NB1MainWindow:SetHandler('OnKeyUp', function(self, key, ctrl, alt, shift, command) NBUI.keyEvent(self, key, ctrl, alt, shift, command) end)
 		NBUI.NB1MainWindow:SetDrawTier(0)
 		local layer = 0
 		if NBUI.db.NB1_OnTop then
@@ -423,7 +449,7 @@ function CreateNB1()
 		NBUI.NB1SelectedPage_Button:SetWidth(420)
 ---------------------------------------------------------------------------------------------------
 	NBUI.NB1SavePage_Button = WINDOW_MANAGER:CreateControl("NBUI_NB1SavePage_Button", NBUI.NB1LeftPage_ScrollContainer.scrollChild, CT_BUTTON)
-		NBUI.NB1SavePage_Button:SetAnchor(RIGHT, NBUI.NB1SelectedPage_Button, RIGHT, -30, -2)
+		NBUI.NB1SavePage_Button:SetAnchor(RIGHT, NBUI.NB1SelectedPage_Button, RIGHT, 6, -2)
 		NBUI.NB1SavePage_Button:SetClickSound(SOUNDS.BOOK_PAGE_TURN)
 		NBUI.NB1SavePage_Button:SetDimensions(30, 30)
 		NBUI.NB1SavePage_Button:SetDrawLayer(2)
@@ -552,7 +578,7 @@ function CreateNB1()
 	-- 	NBUI.NB1RunScript_Button:SetPressedTexture("/esoui/art/buttons/edit_down.dds")
 ---------------------------------------------------------------------------------------------------
 	NBUI.NB1DeletePage_Button = WINDOW_MANAGER:CreateControl("NBUI_NB1DeletePage_Button", NBUI.NB1LeftPage_ScrollContainer.scrollChild, CT_BUTTON)
-		NBUI.NB1DeletePage_Button:SetAnchor(RIGHT, NBUI.NB1SelectedPage_Button, RIGHT, 0, 0)
+		NBUI.NB1DeletePage_Button:SetAnchor(RIGHT, NBUI.NB1SelectedPage_Button, RIGHT, -20, 0)
 		NBUI.NB1DeletePage_Button:SetClickSound(SOUNDS.BOOK_PAGE_TURN)
 		NBUI.NB1DeletePage_Button:SetDimensions(26, 26)
 		NBUI.NB1DeletePage_Button:SetDrawLayer(2)
@@ -958,13 +984,8 @@ function CreateNB1()
 		NBUI.NB1MinChatWin_ButtonTexture:SetTexture("/esoui/art/mainmenu/menubar_journal_up.dds")
 end
 
--- Return date and time as shown below,
--- Or the default text set by user.
-function NBUI.NB1NewTitle(self)
-	if NBUI.db.NB1_NewPageTitle ~= "" then
-		return NBUI.db.NB1_NewPageTitle
-	end
 
+function getDate(self) 
 	-- Bug catcher.
 	if not os or not os.date then return GetString(SI_NBUI_NEWBUTTON_TITLE) end
 
@@ -979,6 +1000,32 @@ function NBUI.NB1NewTitle(self)
 	local date = tonumber(os.date("%d"))
 	-- e.g. 9:39pm Wed', May 2, '18
 	local title = os.date(t .. " %a', %B " .. date .. ", '%y")
+	return title
+end
+
+-- Return date and time as shown below,
+-- Or the default text set by user.
+function NBUI.NB1NewTitle(self)
+	if NBUI.db.NB1_NewPageTitle ~= "" then
+		return NBUI.db.NB1_NewPageTitle
+	end
+	if not cl then return getDate(self) end
+    local osT = GetTimeStamp()
+    local tst = cl.tm.GetTST(osT)
+    local lore, real
+    local year, month, day = 0, 0, 0
+    local hour, minute, second
+	
+    if cl.st.ShowLoreDate() then
+        year, month, day = cl.tm.GetLoreDate()
+    elseif cl.st.ShowFLDate() then
+        year, month, day = cl.tm.GetFakeLoreDate()
+    end
+
+    hour, minute, second = tst[1], tst[2], tst[3]
+    lore = cl.vi.ParseFormat(year, month, day, hour, minute, second, true)
+	
+	local title = lore
 	return title
 end
 
@@ -1072,6 +1119,8 @@ function NBUI.NB1SavePage(self)
 	-- NBUI.NB1UndoPage_Button:SetHidden(true)
 	-- NBUI.NBUI_NB1RightPage_CharacterCounter:SetHidden(true)
 end
+
+
 NB1ConfirmSaveDialog = {
 	title = { text = GetString(SI_NBUI_SAVEBUTTON_TITLE)},
 	mainText = { text = GetString(SI_NBUI_SAVEBUTTON_MAINTEXT)},
@@ -1207,16 +1256,28 @@ function NBUI.NB1Preview(self)
 	end
 end
 
-function NBUI.NB1KeyBindToggle()
-	SCENE_MANAGER:ToggleTopLevel(NBUI.NB1MainWindow)
-	if NBUI.NB1MainWindow:IsHidden() then
+
+function NBUI.close(self) 
+	if not NBUI.NB1MainWindow:IsHidden() then
+		NBUI.save(self, true) 
+		SCENE_MANAGER:ToggleTopLevel(NBUI.NB1MainWindow)
 		PlaySound(SOUNDS.BOOK_CLOSE)
 		if NBUI.db.NB1_EmoteIdle then DoCommand("/idle") end
 		-- Update contents.
 		Populate_NB1_ScrollList()
-	else
+	end
+end
+function NBUI.open() 
+	if NBUI.NB1MainWindow:IsHidden() then
 		PlaySound(SOUNDS.BOOK_OPEN)
+		SCENE_MANAGER:ToggleTopLevel(NBUI.NB1MainWindow)
 		if NBUI.db.NB1_EmoteRead then DoCommand("/read") end
+	end
+end
+
+function NBUI.NB1KeyBindToggle()
+	if NBUI.NB1MainWindow:IsHidden() then
+		NBUI.open() 
 	end
 end
 
